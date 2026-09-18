@@ -1,0 +1,11 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/my_diary_v3/.vs/My_Diary_V3
+/my_diary_v3/src/MyDiary.Core/bin
+/my_diary_v3/src/MyDiary.Core/obj
+/my_diary_v3/src/MyDiary.Data/bin
+/my_diary_v3/src/MyDiary.Data/obj
+/my_diary_v3/src/MyDiary.Web/bin/Debug/net8.0
+/my_diary_v3/src/MyDiary.Web/obj
