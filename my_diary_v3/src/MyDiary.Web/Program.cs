@@ -31,7 +31,10 @@ using MyDiary.Web.RequestPortal;
 using MyDiary.Web.Features.Assurance.Services;
 using MyDiary.Web.Features.Reports.Services;
 using MyDiary.Web.Features.ITKonnect.Services;
-
+using MyDiary.Web.Features.DigitalBusinessVertical.Services;
+using RequestPortal.Core.Services;
+using MyDiary.Web.Features.StrikeCorner.Services;
+using MyDiary.Web.Features.DeploymentPulse.Services;
 // ── Bootstrap Serilog ─────────────────────────────────────────────────────────
 // Resolve the log file path. When NFS is enabled (StaticAssets:UseNfs=true),
 // logs go to a centralized NFS folder (Logging:NfsLogPath, e.g. "MyDiary/Logs")
@@ -112,6 +115,16 @@ try
 {
     Log.Information("Starting My Diary V3");
 
+    // ── Thread pool warm-up ─────────────────────────────────────────────────
+    // Oracle.ManagedDataAccess.Core has no true async I/O (OpenAsync/ExecuteAsync
+    // run synchronously under the hood — see OracleConnectionFactory.cs), and several
+    // report/export services still call blocking APIs. Under a burst of concurrent
+    // circuits (login storms, report generation) the default thread-pool growth rate
+    // (~1-2 new threads/sec once the pool is exhausted) causes queued work to stall
+    // for seconds. Raising the minimum worker/IOCP thread count means the pool starts
+    // at a size that can absorb a burst without waiting on the slow growth ramp.
+    ThreadPool.SetMinThreads(200, 200);
+
     // ── EPPlus 8.x license (set once at startup) ──────────────────────────
     OfficeOpenXml.ExcelPackage.License.SetNonCommercialOrganization("Union Bank of India");
 
@@ -160,7 +173,7 @@ try
     // ── UI libraries ────────────────────────────────────────────────────────
     builder.Services.AddMudServices();
     builder.Services.AddApexCharts();
-
+    builder.Services.AddScoped<IStrikeCornerService, StrikeCornerService>();
     // ── Project B feature services (reflection auto-registration) ──────────
     builder.Services.AddApplicationServices();
 
@@ -187,6 +200,13 @@ try
     builder.Services.AddScoped<INotificationRepository,   NotificationRepository>();
     builder.Services.AddScoped<IMomRepo, MomRepo>();
     builder.Services.AddScoped<IFeedbackRepo, FeedbackRepo>();
+    builder.Services.AddScoped<IDbvService, DbvService>();
+
+
+    builder.Services.AddScoped<IBackDatedDepositRepo,BackDatedDepositRepo>();
+    builder.Services.AddScoped<IDmdRbacRepo,DmdRbacRepo>();
+    builder.Services.AddScoped<IDmdRbacService,DmdRbacService>();
+    builder.Services.AddScoped <IBackDatedDepositWorkflowService,BackDatedDepositWorkflowService>();
 
     // ── Project A Request Portal (Core + Data, unchanged query logic vs RP_* tables) ─
     builder.Services.AddRequestPortalCore();
@@ -220,7 +240,8 @@ try
     // In-memory page metadata (avoids dragging Oracle PageInfo dependency)
     builder.Services.AddScoped<RequestPortal.Web.Features.PageInfo.Services.IPageInfoService,
                                RequestPortal.Web.Features.PageInfo.Services.OraclePageInfoService>();
-
+    //Deployment Pulse ITSM
+    builder.Services.AddScoped<IDeploymentPulseService, DeploymentPulseService>();
     // ── HTTP clients ────────────────────────────────────────────────────────
     builder.Services.AddHttpClient<UserApiClient>();
     builder.Services.AddHttpClient("CryptoService", c => c.Timeout = TimeSpan.FromSeconds(10));
@@ -301,8 +322,11 @@ try
 
     // ── Email / SMS (MailKit, migrated from Project A) ─────────────────────
     builder.Services.Configure<MyDiary.Web.Notify.SmtpOptions>(builder.Configuration.GetSection("Smtp"));
-    builder.Services.AddScoped<IEmailSender, MyDiary.Web.Notify.SmtpEmailSender>();
-    builder.Services.AddScoped<ISmsSender,   MyDiary.Web.Notify.NoOpSmsSender>();
+    //builder.Services.AddScoped<IEmailSender, MyDiary.Web.Notify.SmtpEmailSender>();
+    //builder.Services.AddScoped<ISmsSender,   MyDiary.Web.Notify.NoOpSmsSender>();
+    builder.Services.AddScoped< MyDiary.Core.Abstractions.IEmailSender,MyDiary.Web.Notify.SmtpEmailSender>();
+
+    builder.Services.AddScoped< MyDiary.Core.Abstractions.ISmsSender, MyDiary.Web.Notify.NoOpSmsSender>();
 
     // ── Blazor circuit options ───────────────────────────────────────────────
     builder.Services.Configure<CircuitOptions>(o =>
@@ -311,6 +335,11 @@ try
         o.DisconnectedCircuitRetentionPeriod   = TimeSpan.FromMinutes(20);
         o.DisconnectedCircuitMaxRetained       = 1000;
         o.JSInteropDefaultCallTimeout          = TimeSpan.FromSeconds(60);
+        // Default is 10. At 1000 concurrent circuits, a slow/flaky client that stops
+        // acknowledging render batches (e.g. a mobile network hiccup) will otherwise
+        // let the server keep buffering unacknowledged batches in memory indefinitely
+        // until it disconnects the circuit — this caps that per-circuit buffer.
+        o.MaxBufferedUnacknowledgedRenderBatches = 10;
     });
 
     // ── Authorization (unified policies A + B) ──────────────────────────────
@@ -387,6 +416,7 @@ try
     RequestPortal.Core.Abstractions.ICurrentUser,
     RequestPortal.Web.Auth.CurrentUserService>();
     builder.Services.AddScoped<IITKonnectService, ITKonnectService>();
+
     builder.Services.AddScoped<
         MyDiary.Core.Abstractions.ICurrentUser,
         MyDiary.Web.Auth.CurrentUser>();
@@ -459,6 +489,12 @@ try
     // AuthState/CustomAuthState (same source as CurrentUser), replacing the mock.
     builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
 
+    // Register - IUnionHubVideoLaunchService
+    builder.Services.AddScoped<MyDiary.Web.Features.UnionHubVideoLaunch.Services.IUnionHubVideoLaunchService, MyDiary.Web.Features.UnionHubVideoLaunch.Services.UnionHubVideoLaunchService>();
+
+    // Register - IPositiveBranchListService
+    builder.Services.AddScoped<MyDiary.Web.Features.PositiveBranchList.Services.IPositiveBranchListService, MyDiary.Web.Features.PositiveBranchList.Services.PositiveBranchListService>();
+
     QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
     // ── Hangfire (notification dispatch) — durable Oracle storage ──────────
@@ -474,7 +510,7 @@ try
             // Our jobs are minute-granularity at finest (notification dispatch) plus
             // two nightly jobs, so polling every 60s instead of 15s cuts the queue
             // poller's connection churn ~4x with no meaningful latency cost.
-            QueuePollInterval        = TimeSpan.FromSeconds(60),
+            QueuePollInterval = TimeSpan.FromSeconds(60),
             InvisibilityTimeout      = TimeSpan.FromMinutes(30),
         });
     builder.Services.AddHangfire(cfg => cfg
@@ -492,12 +528,12 @@ try
     builder.Services.AddHangfireServer(options =>
     {
         options.WorkerCount = 2;
-        options.Queues      = new[] { "default" };
+        options.Queues = new[] { "default" };
         // Slower background loops = fewer periodic DELETE HF_SERVER (heartbeat) and
         // DELETE HF_DISTRIBUTED_LOCK round-trips. Defaults are aggressive (heartbeat
         // ~30s, server-check ~1min); relax them for a low-throughput job set.
-        options.HeartbeatInterval       = TimeSpan.FromMinutes(2);
-        options.ServerCheckInterval     = TimeSpan.FromMinutes(10);
+        options.HeartbeatInterval = TimeSpan.FromMinutes(2);
+        options.ServerCheckInterval = TimeSpan.FromMinutes(10);
         options.SchedulePollingInterval = TimeSpan.FromMinutes(1);
     });
 
@@ -507,6 +543,7 @@ try
     builder.Services.AddStaticAssetConfiguration(builder.Configuration);
 
     builder.Services.AddHttpClient("VisitingCardGateway", c => c.Timeout = TimeSpan.FromSeconds(15));
+    builder.Services.AddHttpClient("WhatsAppGateway", c => c.Timeout = TimeSpan.FromSeconds(15));
 
     var app = builder.Build();
 
@@ -551,6 +588,18 @@ try
 
     app.UseSerilogRequestLogging();
     app.UseHttpsRedirection();
+
+    // Security headers: mitigate clickjacking/MIME-sniffing/referrer leakage.
+    // Added by security audit — no CSP here (Blazor Server + MudBlazor use
+    // inline styles/scripts extensively; a strict CSP would need broad,
+    // page-by-page testing to avoid breaking the UI, out of scope for this pass).
+    app.Use(async (ctx, next) =>
+    {
+        ctx.Response.Headers["X-Frame-Options"] = "DENY";
+        ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
+        ctx.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+        await next();
+    });
 
     // PathBase — required when hosted behind IIS at a sub-path (e.g. /My_Diary_V3)
     var pathBase = app.Configuration.GetValue<string>("AppSettings:PathBase");
@@ -605,7 +654,14 @@ try
         "rp.adoption.digest.email",
         j => j.RunAsync(CancellationToken.None),
         "0 9 * * *", // 9 AM IST
-        istRecurringOptions);
+        istRecurringOptions); // 9 AM server time
+
+    // ── Assurance Corner: Positive Branch List — 10:30 AM daily aggregate + zone automailer.
+    // Self-reschedules an hourly retry (see PositiveBranchListDailyJob) if T-1's data isn't in yet.
+    app.Services.GetRequiredService<IRecurringJobManager>().AddOrUpdate<MyDiary.Web.Jobs.PositiveBranchListDailyJob>(
+        "rp.pbl.daily.mail",
+        j => j.RunAsync(CancellationToken.None),
+        "30 10 * * *"); // 10:30 AM server time
 
     // ── CS&BE Monthly Information Notes reminders ──────────────────────────
     //app.Services.GetRequiredService<IRecurringJobManager>().AddOrUpdate<MyDiary.Web.Jobs.CsbeMonthlyReminderJob>(
@@ -624,6 +680,8 @@ try
        .AddInteractiveServerRenderMode();
 
     app.MapHub<MyDiary.Web.Hubs.NotificationHub>("/hubs/notifications");
+    MyDiary.Web.Features.SubsidiaryJv.SjvEndpoints.MapSjv(app);            // /sjv/logo/{code} -- entity logo BLOB
+    MyDiary.Web.Features.StrikeCorner.StrikeCornerEndpoints.MapStrikeCorner(app); // /strike-corner/doc/{id} -- FAQ/SOP doc BLOB
 
     Log.Information("My Diary V3 started");
     app.Run();
