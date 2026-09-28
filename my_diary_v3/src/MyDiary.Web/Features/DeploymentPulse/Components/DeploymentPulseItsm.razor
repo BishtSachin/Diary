@@ -6,45 +6,71 @@
 @using MyDiary.Web.Features.DeploymentPulse.Services
 @inject IDeploymentPulseService DeploymentPulseService
 
-<PageTitle>Deployment Pulse ITSM</PageTitle>
+<PageTitle>Deployment Pulse ITSM — My Diary | Union Bank of India</PageTitle>
 
 <style>
-    /* ---------- layout ---------- */
-    .dp-page {
-        max-width: 1600px;
-        margin: 0 auto;
-        padding: 2rem 1.5rem 4rem;
+    /* Tokens copied from the rates-charges page so both pages share one look.
+       Scoped to .dp-wrapper so they don't leak into other pages. */
+    .dp-wrapper {
+        --dp-primary-gradient: linear-gradient(135deg, #1E3A8A 0%, #EF4444 100%);
+        --dp-primary-color: #1E3A8A;
+        --dp-secondary-color: #EF4444;
+
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        min-height: 85vh;
+        background-image: url("images/Login_right_bg.jpeg");
+        background-size: cover;
+        background-position: center;
     }
 
-    /* ---------- hero / stat strip ---------- */
+    /* ---------- white panels (same treatment as rates-container / filter-panel) ---------- */
+    /* Content is capped at 1600px (as in the committed version); the background image stays full-bleed. */
+    .dp-wrapper > .dp-panel {
+        width: 100%;
+        max-width: 1600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .dp-panel {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        min-width: 0;
+    }
+
+    /* ---------- title + stat strip ---------- */
     .dp-hero {
         display: flex;
         flex-wrap: wrap;
         justify-content: space-between;
         align-items: flex-end;
         gap: 1.5rem;
-        margin-bottom: 1.75rem;
     }
 
     .dp-title {
         font-size: 1.9rem;
         font-weight: 700;
-        color: #1a1f2b;
+        color: #1f2937;
         margin: 0 0 0.35rem;
-        letter-spacing: -0.01em;
     }
 
     .dp-subtitle {
         font-size: 0.95rem;
-        color: #5b6472;
+        color: #6b7280;
         margin: 0;
-        max-width: 46ch;
+        max-width: 50ch;
     }
 
     .dp-updated {
-        font-size: 0.8rem;
-        color: #8b93a1;
+        font-size: 0.85rem;
+        color: #6b7280;
         margin-top: 0.5rem;
+        font-style: italic;
     }
 
     .dp-stats {
@@ -54,11 +80,11 @@
     }
 
     .dp-stat {
-        min-width: 96px;
+        min-width: 100px;
         padding: 0.7rem 1rem;
-        border-left: 3px solid #cbd2dc;
-        background: #fafbfc;
-        border-radius: 4px;
+        border-left: 4px solid #cbd2dc;
+        background: #f8fafc;
+        border-radius: 8px;
     }
 
     .dp-stat-value {
@@ -66,46 +92,67 @@
         font-size: 1.5rem;
         font-weight: 700;
         line-height: 1.1;
-        color: #1a1f2b;
+        color: #1f2937;
     }
 
     .dp-stat-label {
         display: block;
-        font-size: 0.78rem;
-        color: #5b6472;
+        font-size: 0.8rem;
+        color: #6b7280;
         margin-top: 0.2rem;
     }
 
+    .dp-stat-total { border-left-color: var(--dp-primary-color); }
     .dp-stat-planned { border-left-color: #2563eb; }
     .dp-stat-live { border-left-color: #12805c; }
     .dp-stat-rolledback { border-left-color: #6b7280; }
 
-    /* ---------- toolbar ---------- */
-    .dp-toolbar {
-        background: #fafbfc;
-        border: 1px solid #e5e8ec;
-        border-radius: 8px;
-        padding: 1rem 1.1rem;
-        margin-bottom: 1.25rem;
-    }
-
+    /* ---------- filters ---------- */
     .dp-chips {
         display: flex;
         flex-wrap: wrap;
         gap: 0.4rem;
-        margin-top: 0.75rem;
+        margin-top: 0.9rem;
     }
 
-    /* ---------- table card ---------- */
-    .dp-table-card {
-        border: 1px solid #e5e8ec;
-        border-radius: 8px;
-        overflow: hidden;
-        background: #fff;
+    .dp-search-btn {
+        background: var(--dp-primary-gradient) !important;
+        color: #fff !important;
+        border-radius: 999px !important;
+        font-weight: 600;
+        box-shadow: 0 8px 20px rgba(30,58,138,0.35);
+        transition: all 0.25s ease;
     }
 
-    .dp-table-card .mud-table-container {
+    .dp-search-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    /* ---------- table (same header gradient / zebra / hover as .rate-table) ---------- */
+    .dp-table .mud-table-container {
         overflow-x: auto;
+    }
+
+    .dp-table .mud-table-root th {
+        background: linear-gradient(135deg, #1E3A8A, #2563EB);
+        color: white;
+        font-weight: 600;
+        padding: 12px 16px;
+        border: 1px solid #1E3A8A;
+    }
+
+    .dp-table .mud-table-root td {
+        padding: 10px 16px;
+        border: 1px solid #e5e7eb;
+        color: #1f2937;
+    }
+
+    .dp-table .mud-table-root tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
+    .dp-table .mud-table-root tbody tr:hover {
+        background: #eff6ff;
     }
 
     .dp-row {
@@ -115,11 +162,12 @@
     .dp-cr {
         font-family: Consolas, "SF Mono", Menlo, monospace;
         font-size: 0.88rem;
-        letter-spacing: 0.01em;
+        font-weight: 600;
+        color: var(--dp-primary-color);
     }
 
     .dp-chevron {
-        color: #b5bcc6;
+        color: #9ca3af;
     }
 
     /* ---------- status badge ---------- */
@@ -127,7 +175,7 @@
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
-        padding: 0.22rem 0.6rem 0.22rem 0.5rem;
+        padding: 0.22rem 0.65rem 0.22rem 0.55rem;
         border-radius: 999px;
         font-size: 0.8rem;
         font-weight: 600;
@@ -161,7 +209,7 @@
     }
 
     .dp-empty p {
-        color: #5b6472;
+        color: #6b7280;
         margin: 0 0 0.75rem;
     }
 
@@ -174,7 +222,7 @@
         font-family: Consolas, "SF Mono", Menlo, monospace;
         font-size: 1.15rem;
         font-weight: 700;
-        color: #1a1f2b;
+        color: var(--dp-primary-color);
     }
 
     .dp-field {
@@ -182,58 +230,62 @@
     }
 
     .dp-field-label {
-        font-size: 0.78rem;
-        color: #8b93a1;
+        font-size: 0.8rem;
+        color: #6b7280;
         margin-bottom: 0.2rem;
     }
 
     .dp-field-value {
         font-size: 0.95rem;
-        color: #1a1f2b;
+        color: #1f2937;
         line-height: 1.45;
     }
 
     @@media (prefers-reduced-motion: reduce) {
         .mud-drawer { transition: none !important; }
+        .dp-search-btn { transition: none; }
     }
 
     @@media (max-width: 600px) {
+        .dp-panel { padding: 16px; }
         .dp-title { font-size: 1.5rem; }
         .dp-stat { min-width: 80px; padding: 0.55rem 0.75rem; }
         .dp-stat-value { font-size: 1.2rem; }
     }
 </style>
 
-<div class="dp-page">
+<div class="dp-wrapper">
 
-    <div class="dp-hero">
-        <div>
-            <h1 class="dp-title">Deployment Pulse ITSM</h1>
-            <p class="dp-subtitle">Status of change requests as they move from planning through go-live, across all verticals.</p>
-            <div class="dp-updated">Last refreshed @_lastRefreshed.ToString("dd MMM, hh:mm tt")</div>
+    <section class="dp-panel">
+        <div class="dp-hero">
+            <div>
+                <h1 class="dp-title">Deployment Pulse ITSM</h1>
+                <p class="dp-subtitle">Status of change requests as they move from planning through go-live, across all verticals.</p>
+                <div class="dp-updated">Last refreshed @_lastRefreshed.ToString("dd MMM, hh:mm tt")</div>
+            </div>
+
+            <div class="dp-stats">
+                <div class="dp-stat dp-stat-total">
+                    <span class="dp-stat-value">@_items.Count</span>
+                    <span class="dp-stat-label">Total</span>
+                </div>
+                <div class="dp-stat dp-stat-planned">
+                    <span class="dp-stat-value">@_items.Count(i => i.Status == "Planned")</span>
+                    <span class="dp-stat-label">Planned</span>
+                </div>
+                <div class="dp-stat dp-stat-live">
+                    <span class="dp-stat-value">@_items.Count(i => i.Status == "Live")</span>
+                    <span class="dp-stat-label">Live</span>
+                </div>
+                <div class="dp-stat dp-stat-rolledback">
+                    <span class="dp-stat-value">@_items.Count(i => i.Status == "Rolled back")</span>
+                    <span class="dp-stat-label">Rolled back</span>
+                </div>
+            </div>
         </div>
+    </section>
 
-        <div class="dp-stats">
-            <div class="dp-stat">
-                <span class="dp-stat-value">@_items.Count</span>
-                <span class="dp-stat-label">Total</span>
-            </div>
-            <div class="dp-stat dp-stat-planned">
-                <span class="dp-stat-value">@_items.Count(i => i.Status == "Planned")</span>
-                <span class="dp-stat-label">Planned</span>
-            </div>
-            <div class="dp-stat dp-stat-live">
-                <span class="dp-stat-value">@_items.Count(i => i.Status == "Live")</span>
-                <span class="dp-stat-label">Live</span>
-            </div>
-            <div class="dp-stat dp-stat-rolledback">
-                <span class="dp-stat-value">@_items.Count(i => i.Status == "Rolled back")</span>
-                <span class="dp-stat-label">Rolled back</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="dp-toolbar">
+    <section class="dp-panel">
         <MudGrid Spacing="2">
             <MudItem xs="12" sm="6" md="2">
                 <MudTextField @bind-Value="_filter.CrqNumber" Label="CR No." Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -262,7 +314,7 @@
                 <MudDateRangePicker @bind-DateRange="_dateRange" Label="Tentative go-live" Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
             <MudItem xs="12" sm="4" md="1" Class="d-flex align-center">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" OnClick="Search" Style="background:#e31e24;">
+                <MudButton Variant="Variant.Filled" FullWidth="true" OnClick="Search" Class="dp-search-btn">
                     Search
                 </MudButton>
             </MudItem>
@@ -294,17 +346,17 @@
                 <MudButton Size="Size.Small" Variant="Variant.Text" OnClick="ResetFilters">Clear all</MudButton>
             </div>
         }
-    </div>
+    </section>
 
-    <div class="dp-table-card">
-            <MudTable T="DeploymentPulseItem"
-                      Items="_items"
-                      Hover="false"
-                      Dense="true"
-                      Loading="_loading"
-                      RowsPerPage="20"
-                      OnRowClick="OnRowClicked"
-                      RowClass="dp-row">
+    <section class="dp-panel dp-table">
+        <MudTable T="DeploymentPulseItem"
+                  Items="_items"
+                  Hover="false"
+                  Dense="true"
+                  Loading="_loading"
+                  RowsPerPage="20"
+                  OnRowClick="OnRowClicked"
+                  RowClass="dp-row">
             <HeaderContent>
                 <MudTh>CR No.</MudTh>
                 <MudTh>Vertical</MudTh>
@@ -335,7 +387,7 @@
                 <MudTablePager />
             </PagerContent>
         </MudTable>
-    </div>
+    </section>
 </div>
 
 <MudDrawer @bind-Open="_drawerOpen" Anchor="Anchor.Right" Elevation="2" Variant="DrawerVariant.Temporary" Width="420px">
@@ -366,7 +418,8 @@
                 <div class="dp-field-value">@FormatDate(_selected.ActualGoLiveDate)</div>
             </div>
             @* SPOC_DETAILS carries a name + email address - confirm before showing this on
-               a page with no login. <div class="dp-field">
+               a page with no login.
+            <div class="dp-field">
                 <div class="dp-field-label">SPOC</div>
                 <div class="dp-field-value">@_selected.SpocDetails</div>
             </div> *@
