@@ -8,20 +8,241 @@
 
 <PageTitle>Deployment Pulse ITSM</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudText Typo="Typo.h5" Class="mb-4">Deployment Pulse ITSM</MudText>
+<style>
+    /* ---------- layout ---------- */
+    .dp-page {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem 4rem;
+    }
 
-    @* ---- Filters ---- *@
-    <MudPaper Class="pa-4 mb-4" Elevation="1">
-        <MudGrid>
+    /* ---------- hero / stat strip ---------- */
+    .dp-hero {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 1.5rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .dp-title {
+        font-size: 1.9rem;
+        font-weight: 700;
+        color: #1a1f2b;
+        margin: 0 0 0.35rem;
+        letter-spacing: -0.01em;
+    }
+
+    .dp-subtitle {
+        font-size: 0.95rem;
+        color: #5b6472;
+        margin: 0;
+        max-width: 46ch;
+    }
+
+    .dp-updated {
+        font-size: 0.8rem;
+        color: #8b93a1;
+        margin-top: 0.5rem;
+    }
+
+    .dp-stats {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .dp-stat {
+        min-width: 96px;
+        padding: 0.7rem 1rem;
+        border-left: 3px solid #cbd2dc;
+        background: #fafbfc;
+        border-radius: 4px;
+    }
+
+    .dp-stat-value {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.1;
+        color: #1a1f2b;
+    }
+
+    .dp-stat-label {
+        display: block;
+        font-size: 0.78rem;
+        color: #5b6472;
+        margin-top: 0.2rem;
+    }
+
+    .dp-stat-planned { border-left-color: #2563eb; }
+    .dp-stat-live { border-left-color: #12805c; }
+    .dp-stat-rolledback { border-left-color: #6b7280; }
+
+    /* ---------- toolbar ---------- */
+    .dp-toolbar {
+        background: #fafbfc;
+        border: 1px solid #e5e8ec;
+        border-radius: 8px;
+        padding: 1rem 1.1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .dp-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-top: 0.75rem;
+    }
+
+    /* ---------- table card ---------- */
+    .dp-table-card {
+        border: 1px solid #e5e8ec;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .dp-table-card .mud-table-container {
+        overflow-x: auto;
+    }
+
+    .dp-row {
+        cursor: pointer;
+    }
+
+    .dp-cr {
+        font-family: Consolas, "SF Mono", Menlo, monospace;
+        font-size: 0.88rem;
+        letter-spacing: 0.01em;
+    }
+
+    .dp-chevron {
+        color: #b5bcc6;
+    }
+
+    /* ---------- status badge ---------- */
+    .dp-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.22rem 0.6rem 0.22rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .dp-badge::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .dp-badge-live { background: #e7f5ef; color: #0f6b4d; }
+    .dp-badge-live::before { background: #12805c; }
+
+    .dp-badge-planned { background: #eaf1fd; color: #1d4ed8; }
+    .dp-badge-planned::before { background: #2563eb; }
+
+    .dp-badge-rolledback { background: #f0f1f3; color: #4b5563; }
+    .dp-badge-rolledback::before { background: #6b7280; }
+
+    .dp-badge-unknown { background: #f4f4f5; color: #71717a; }
+    .dp-badge-unknown::before { background: #a1a1aa; }
+
+    /* ---------- empty state ---------- */
+    .dp-empty {
+        padding: 3rem 1rem;
+        text-align: center;
+    }
+
+    .dp-empty p {
+        color: #5b6472;
+        margin: 0 0 0.75rem;
+    }
+
+    /* ---------- detail drawer ---------- */
+    .dp-drawer {
+        padding: 1.5rem;
+    }
+
+    .dp-drawer-cr {
+        font-family: Consolas, "SF Mono", Menlo, monospace;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #1a1f2b;
+    }
+
+    .dp-field {
+        margin-bottom: 1.1rem;
+    }
+
+    .dp-field-label {
+        font-size: 0.78rem;
+        color: #8b93a1;
+        margin-bottom: 0.2rem;
+    }
+
+    .dp-field-value {
+        font-size: 0.95rem;
+        color: #1a1f2b;
+        line-height: 1.45;
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .mud-drawer { transition: none !important; }
+    }
+
+    @@media (max-width: 600px) {
+        .dp-title { font-size: 1.5rem; }
+        .dp-stat { min-width: 80px; padding: 0.55rem 0.75rem; }
+        .dp-stat-value { font-size: 1.2rem; }
+    }
+</style>
+
+<div class="dp-page">
+
+    <div class="dp-hero">
+        <div>
+            <h1 class="dp-title">Deployment Pulse ITSM</h1>
+            <p class="dp-subtitle">Status of change requests as they move from planning through go-live, across all verticals.</p>
+            <div class="dp-updated">Last refreshed @_lastRefreshed.ToString("dd MMM, hh:mm tt")</div>
+        </div>
+
+        <div class="dp-stats">
+            <div class="dp-stat">
+                <span class="dp-stat-value">@_items.Count</span>
+                <span class="dp-stat-label">Total</span>
+            </div>
+            <div class="dp-stat dp-stat-planned">
+                <span class="dp-stat-value">@_items.Count(i => i.Status == "Planned")</span>
+                <span class="dp-stat-label">Planned</span>
+            </div>
+            <div class="dp-stat dp-stat-live">
+                <span class="dp-stat-value">@_items.Count(i => i.Status == "Live")</span>
+                <span class="dp-stat-label">Live</span>
+            </div>
+            <div class="dp-stat dp-stat-rolledback">
+                <span class="dp-stat-value">@_items.Count(i => i.Status == "Rolled back")</span>
+                <span class="dp-stat-label">Rolled back</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="dp-toolbar">
+        <MudGrid Spacing="2">
             <MudItem xs="12" sm="6" md="2">
-                <MudTextField @bind-Value="_filter.CrqNumber" Label="CR No." Immediate="false" />
+                <MudTextField @bind-Value="_filter.CrqNumber" Label="CR No." Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
             <MudItem xs="12" sm="6" md="2">
-                <MudTextField @bind-Value="_filter.Vertical" Label="Vertical" Immediate="false" />
+                <MudTextField @bind-Value="_filter.Vertical" Label="Vertical" Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
             <MudItem xs="12" sm="6" md="2">
-                <MudSelect @bind-Value="_filter.Status" Label="Status">
+                <MudSelect @bind-Value="_filter.Status" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense">
                     <MudSelectItem Value="@("ALL")">All</MudSelectItem>
                     <MudSelectItem Value="@("Planned")">Planned</MudSelectItem>
                     <MudSelectItem Value="@("Live")">Live</MudSelectItem>
@@ -29,7 +250,7 @@
                 </MudSelect>
             </MudItem>
             <MudItem xs="12" sm="6" md="2">
-                <MudSelect @bind-Value="_filter.PublishYear" Label="Publish Year">
+                <MudSelect @bind-Value="_filter.PublishYear" Label="Publish year" Variant="Variant.Outlined" Margin="Margin.Dense">
                     <MudSelectItem Value="@("ALL")">All</MudSelectItem>
                     @foreach (var year in _publishYears)
                     {
@@ -37,84 +258,131 @@
                     }
                 </MudSelect>
             </MudItem>
-            <MudItem xs="12" sm="6" md="2">
-                <MudDatePicker @bind-Date="_filter.FromDate" Label="From (Tentative)" />
+            <MudItem xs="12" sm="8" md="3">
+                <MudDateRangePicker @bind-DateRange="_dateRange" Label="Tentative go-live" Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
-            <MudItem xs="12" sm="6" md="2">
-                <MudDatePicker @bind-Date="_filter.ToDate" Label="To (Tentative)" />
+            <MudItem xs="12" sm="4" md="1" Class="d-flex align-center">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" OnClick="Search" Style="background:#e31e24;">
+                    Search
+                </MudButton>
             </MudItem>
         </MudGrid>
-        <MudStack Row="true" Class="mt-3" Justify="Justify.FlexEnd" Spacing="2">
-            <MudButton Variant="Variant.Text" OnClick="ResetFilters">Reset</MudButton>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Search">Search</MudButton>
-        </MudStack>
-    </MudPaper>
 
-    @if (_loading)
-    {
-        <MudProgressLinear Indeterminate="true" Class="mb-4" />
-    }
-    else
-    {
-        <MudText Typo="Typo.body2" Class="mb-2">@_items.Count record(s) found</MudText>
-    }
+        @if (HasActiveFilters())
+        {
+            <div class="dp-chips">
+                @if (!string.IsNullOrWhiteSpace(_filter.CrqNumber))
+                {
+                    <MudChip T="string" Size="Size.Small" OnClose="@(() => { _filter.CrqNumber = null; Search(); })">CR: @_filter.CrqNumber</MudChip>
+                }
+                @if (!string.IsNullOrWhiteSpace(_filter.Vertical))
+                {
+                    <MudChip T="string" Size="Size.Small" OnClose="@(() => { _filter.Vertical = null; Search(); })">Vertical: @_filter.Vertical</MudChip>
+                }
+                @if (_filter.Status != "ALL")
+                {
+                    <MudChip T="string" Size="Size.Small" OnClose="@(() => { _filter.Status = "ALL"; Search(); })">Status: @_filter.Status</MudChip>
+                }
+                @if (_filter.PublishYear != "ALL")
+                {
+                    <MudChip T="string" Size="Size.Small" OnClose="@(() => { _filter.PublishYear = "ALL"; Search(); })">Year: @_filter.PublishYear</MudChip>
+                }
+                @if (_dateRange is not null)
+                {
+                    <MudChip T="string" Size="Size.Small" OnClose="@(() => { _dateRange = null; Search(); })">Date range</MudChip>
+                }
+                <MudButton Size="Size.Small" Variant="Variant.Text" OnClick="ResetFilters">Clear all</MudButton>
+            </div>
+        }
+    </div>
 
-    @* ---- Grid ---- *@
-    <MudTable Items="_items" Hover="true" Dense="true" Loading="_loading" RowsPerPage="20">
-        <HeaderContent>
-            <MudTh>CR No.</MudTh>
-            <MudTh>Vertical</MudTh>
-            <MudTh>Impact</MudTh>
-            <MudTh>Tentative Go-Live</MudTh>
-            <MudTh>Actual Go-Live</MudTh>
-            <MudTh>Status</MudTh>
-            <MudTh></MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="CR No.">@context.CrqNumber</MudTd>
-            <MudTd DataLabel="Vertical">@context.Vertical</MudTd>
-            <MudTd DataLabel="Impact">@context.Impact</MudTd>
-            <MudTd DataLabel="Tentative Go-Live">@FormatDate(context.TentativeGoLiveDate)</MudTd>
-            <MudTd DataLabel="Actual Go-Live">@FormatDate(context.ActualGoLiveDate)</MudTd>
-            <MudTd DataLabel="Status">@context.Status</MudTd>
-            <MudTd>
-                <MudButton Size="Size.Small" Variant="Variant.Text" OnClick="@(() => ShowDetails(context))">View</MudButton>
-            </MudTd>
-        </RowTemplate>
-        <PagerContent>
-            <MudTablePager />
-        </PagerContent>
-    </MudTable>
+    <div class="dp-table-card">
+            <MudTable T="DeploymentPulseItem"
+                      Items="_items"
+                      Hover="false"
+                      Dense="true"
+                      Loading="_loading"
+                      RowsPerPage="20"
+                      OnRowClick="OnRowClicked"
+                      RowClass="dp-row">
+            <HeaderContent>
+                <MudTh>CR No.</MudTh>
+                <MudTh>Vertical</MudTh>
+                <MudTh>Impact</MudTh>
+                <MudTh>Tentative go-live</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="CR No." Class="dp-cr">@context.CrqNumber</MudTd>
+                <MudTd DataLabel="Vertical">@context.Vertical</MudTd>
+                <MudTd DataLabel="Impact">@context.Impact</MudTd>
+                <MudTd DataLabel="Tentative go-live">@FormatDate(context.TentativeGoLiveDate)</MudTd>
+                <MudTd DataLabel="Status">
+                    <span class="@BadgeClass(context.Status)">@(context.Status ?? "Unknown")</span>
+                </MudTd>
+                <MudTd Class="dp-chevron">
+                    <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <div class="dp-empty">
+                    <p>No deployments match these filters.</p>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="ResetFilters">Clear filters</MudButton>
+                </div>
+            </NoRecordsContent>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </div>
+</div>
 
-    @* ---- Detail panel ---- *@
+<MudDrawer @bind-Open="_drawerOpen" Anchor="Anchor.Right" Elevation="2" Variant="DrawerVariant.Temporary" Width="420px">
     @if (_selected is not null)
     {
-        <MudPaper Class="pa-4 mt-4" Elevation="2">
-            <MudStack Row="true" Justify="Justify.SpaceBetween">
-                <MudText Typo="Typo.h6">@_selected.CrqNumber</MudText>
-                <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="@(() => _selected = null)" />
-            </MudStack>
-            <MudGrid Class="mt-2">
-                <MudItem xs="12" md="6"><b>Vertical:</b> @_selected.Vertical</MudItem>
-                <MudItem xs="12" md="6"><b>Impact:</b> @_selected.Impact</MudItem>
-                <MudItem xs="12"><b>Description:</b> @_selected.Description</MudItem>
-                <MudItem xs="12" md="6"><b>Tentative Go-Live:</b> @FormatDate(_selected.TentativeGoLiveDate)</MudItem>
-                <MudItem xs="12" md="6"><b>Actual Go-Live:</b> @FormatDate(_selected.ActualGoLiveDate)</MudItem>
-                @* SPOC_DETAILS carries a name + email address - confirm this should be
-                   shown on a page with no login before enabling on the public route. *@
-                @* <MudItem xs="12"><b>SPOC:</b> @_selected.SpocDetails</MudItem> *@
-                <MudItem xs="12" md="6"><b>Status:</b> @_selected.Status</MudItem>
-            </MudGrid>
-        </MudPaper>
+        <div class="dp-drawer">
+            <div class="dp-drawer-cr">@_selected.CrqNumber</div>
+            <span class="@BadgeClass(_selected.Status)" style="margin:0.6rem 0 1.5rem; display:inline-flex;">@(_selected.Status ?? "Unknown")</span>
+
+            <div class="dp-field">
+                <div class="dp-field-label">Vertical</div>
+                <div class="dp-field-value">@_selected.Vertical</div>
+            </div>
+            <div class="dp-field">
+                <div class="dp-field-label">Description</div>
+                <div class="dp-field-value">@_selected.Description</div>
+            </div>
+            <div class="dp-field">
+                <div class="dp-field-label">Impact</div>
+                <div class="dp-field-value">@_selected.Impact</div>
+            </div>
+            <div class="dp-field">
+                <div class="dp-field-label">Tentative go-live</div>
+                <div class="dp-field-value">@FormatDate(_selected.TentativeGoLiveDate)</div>
+            </div>
+            <div class="dp-field">
+                <div class="dp-field-label">Actual go-live</div>
+                <div class="dp-field-value">@FormatDate(_selected.ActualGoLiveDate)</div>
+            </div>
+            @* SPOC_DETAILS carries a name + email address - confirm before showing this on
+               a page with no login. <div class="dp-field">
+                <div class="dp-field-label">SPOC</div>
+                <div class="dp-field-value">@_selected.SpocDetails</div>
+            </div> *@
+        </div>
     }
-</MudContainer>
+</MudDrawer>
 
 @code {
     private DeploymentPulseFilter _filter = new();
     private List<DeploymentPulseItem> _items = new();
     private List<string> _publishYears = new();
     private DeploymentPulseItem? _selected;
+    private bool _drawerOpen;
     private bool _loading;
+    private DateTime _lastRefreshed = DateTime.Now;
+    private DateRange? _dateRange;
 
     protected override async Task OnInitializedAsync()
     {
@@ -127,18 +395,29 @@
     private async Task ResetFilters()
     {
         _filter = new DeploymentPulseFilter();
+        _dateRange = null;
         await LoadData();
     }
+
+    private bool HasActiveFilters() =>
+        !string.IsNullOrWhiteSpace(_filter.CrqNumber) ||
+        !string.IsNullOrWhiteSpace(_filter.Vertical) ||
+        _filter.Status != "ALL" ||
+        _filter.PublishYear != "ALL" ||
+        _dateRange is not null;
 
     private async Task LoadData()
     {
         _loading = true;
-        _selected = null;
+        _filter.FromDate = _dateRange?.Start;
+        _filter.ToDate = _dateRange?.End;
+
         try
         {
             // onlyPublished defaults to true - this route is anonymous, so it should
             // only ever surface rows marked PUBLISH_FLAG = 'Y'.
             _items = await DeploymentPulseService.GetDeploymentsAsync(_filter);
+            _lastRefreshed = DateTime.Now;
         }
         finally
         {
@@ -146,7 +425,24 @@
         }
     }
 
-    private void ShowDetails(DeploymentPulseItem item) => _selected = item;
+    private void ShowDetails(DeploymentPulseItem item)
+    {
+        _selected = item;
+        _drawerOpen = true;
+    }
 
-    private static string FormatDate(DateTime? date) => date?.ToString("dd-MMM-yyyy") ?? string.Empty;
+    private static string BadgeClass(string? status) => status switch
+    {
+        "Live" => "dp-badge dp-badge-live",
+        "Planned" => "dp-badge dp-badge-planned",
+        "Rolled back" => "dp-badge dp-badge-rolledback",
+        _ => "dp-badge dp-badge-unknown"
+    };
+
+    private static string FormatDate(DateTime? date) => date?.ToString("dd-MMM-yyyy") ?? "—";
+
+    private void OnRowClicked(TableRowClickEventArgs<DeploymentPulseItem> e)
+    {
+        ShowDetails(e.Item);
+    }
 }

@@ -148,6 +148,7 @@ ORDER BY GroupId, SortOrder
                     new() { Label = "Whistle Blower Portal",        Url = "https://whistleblower.unionbankofindia.bank.in/ubi_wb/" },
                     new() { Label = "FAQs/SOPs",                    Url = "https://mydiary.unionbankofindia.co.in/Artifacts/Activities?DeptID=53" },
                     new() { Label = "Union Connect – हम वही हैं",   Url = "https://mydiary.unionbankofindia.co.in/Artifacts/Documents/Upload/?ActivityID=299" },
+                    new() { Label = "Deployment Pulse",      Url = "reports/deployment-pulse-itsm",            IsExternal = false },
                 }
             },
 
